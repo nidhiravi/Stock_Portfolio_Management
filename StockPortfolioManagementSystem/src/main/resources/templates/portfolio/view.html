@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Portfolio - Stock Portfolio System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        /* Ensure styles are applied immediately */
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up me-2"></i>Stock Portfolio
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/dashboard}">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/portfolio}">
+                            <i class="bi bi-wallet2 me-1"></i>Portfolio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/transactions}">
+                            <i class="bi bi-arrow-left-right me-1"></i>Transactions
+                        </a>
+                    </li>
+                </ul>
+                <form th:action="@{/logout}" method="post" class="d-flex">
+                    <button class="btn btn-outline-danger" type="submit">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-content">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2>My Portfolio</h2>
+                <p class="text-secondary">Manage your stock holdings and track performance</p>
+            </div>
+
+            <div th:if="${param.success}" class="alert alert-success alert-dismissible fade show" role="alert">
+                Stock added successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${param.removed}" class="alert alert-info alert-dismissible fade show" role="alert">
+                Stock removed successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${param.updated}" class="alert alert-success alert-dismissible fade show" role="alert">
+                Stock updated successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            <div th:if="${param.error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                <span th:text="${param.error}">Error occurred.</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="stats-card">
+                        <h5>Total Value</h5>
+                        <h3>$<span th:text="${#numbers.formatDecimal(portfolio.totalValue, 1, 2)}">0.00</span></h3>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="stats-card success">
+                        <h5>Available Cash</h5>
+                        <h3>$<span th:text="${#numbers.formatDecimal(portfolio.availableCash, 1, 2)}">0.00</span></h3>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="stats-card info">
+                        <h5>Stocks Count</h5>
+                        <h3><span th:text="${stocks.size()}">0</span></h3>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 mb-3">
+                    <div class="stats-card danger">
+                        <h5>Stock Value</h5>
+                        <h3>$<span th:text="${#numbers.formatDecimal(portfolio.totalValue - portfolio.availableCash, 1, 2)}">0.00</span></h3>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0" style="color: white;">
+                        <i class="bi bi-wallet2 me-2"></i>Available Stocks
+                    </h5>
+                    <a th:href="@{/portfolio/add}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Add New Stock
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div th:if="${availableStocks.empty}" class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No stocks available in the system. Click "Add New Stock" to add stocks.
+                    </div>
+                    <div th:unless="${availableStocks.empty}" class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Name</th>
+                                    <th>Available Shares</th>
+                                    <th>Current Price</th>
+                                    <th>Total Value</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="stock : ${availableStocks}">
+                                    <td th:text="${stock.symbol}">AAPL</td>
+                                    <td th:text="${stock.name}">Apple Inc.</td>
+                                    <td th:text="${stock.totalShares}">1000</td>
+                                    <td>$<span th:text="${#numbers.formatDecimal(stock.currentPrice, 1, 2)}">150.00</span></td>
+                                    <td>$<span th:text="${#numbers.formatDecimal(stock.currentPrice * stock.totalShares, 1, 2)}">150000.00</span></td>
+                                    <td>
+                                        <a th:href="@{/transactions/buy?symbol={symbol}&name={name}(symbol=${stock.symbol},name=${stock.name})}" 
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-cart-plus"></i> Buy
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0" style="color: white;">
+                        <i class="bi bi-wallet2 me-2"></i>My Portfolio Holdings
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div th:if="${stocks.empty}" class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Your portfolio is empty. Buy stocks from the available stocks above.
+                    </div>
+                    <div th:unless="${stocks.empty}" class="table-responsive portfolio-table">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Name</th>
+                                    <th>Quantity</th>
+                                    <th>Purchase Price</th>
+                                    <th>Current Price</th>
+                                    <th>Total Value</th>
+                                    <th>Profit/Loss</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="stock : ${stocks}">
+                                    <td th:text="${stock.symbol}">AAPL</td>
+                                    <td th:text="${stock.name}">Apple Inc.</td>
+                                    <td th:text="${stock.quantity}">10</td>
+                                    <td>$<span th:text="${#numbers.formatDecimal(stock.purchasePrice, 1, 2)}">150.00</span></td>
+                                    <td>$<span th:text="${#numbers.formatDecimal(stock.currentPrice, 1, 2)}">160.00</span></td>
+                                    <td>$<span th:text="${#numbers.formatDecimal(stock.currentPrice * stock.quantity, 1, 2)}">1600.00</span></td>
+                                    <td th:class="${stock.profitLoss >= 0 ? 'text-success' : 'text-danger'}">
+                                        <span th:text="${stock.profitLoss >= 0 ? '+' : ''} + ${#numbers.formatDecimal(stock.profitLoss, 1, 2)}">+100.00</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a th:href="@{/transactions/buy(symbol=${stock.symbol})}" class="btn btn-success btn-sm">
+                                                <i class="bi bi-plus-circle"></i> Buy
+                                            </a>
+                                            <a th:href="@{/transactions/sell(symbol=${stock.symbol})}" class="btn btn-danger btn-sm">
+                                                <i class="bi bi-dash-circle"></i> Sell
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0">Stock Portfolio Management System © 2025</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

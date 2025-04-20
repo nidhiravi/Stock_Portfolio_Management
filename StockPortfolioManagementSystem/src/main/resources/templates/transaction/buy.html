@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Buy Stock - Stock Portfolio System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        .form-control {
+            background-color: #2c2c2c;
+            border-color: #3c3c3c;
+            color: white;
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .input-group-text {
+            background-color: #2c2c2c;
+            border-color: #3c3c3c;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-graph-up me-2"></i>Stock Portfolio
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/dashboard}">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/portfolio}">
+                            <i class="bi bi-wallet2 me-1"></i>Portfolio
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/transactions}">
+                            <i class="bi bi-arrow-left-right me-1"></i>Transactions
+                        </a>
+                    </li>
+                </ul>
+                <form th:action="@{/logout}" method="post" class="d-flex">
+                    <button class="btn btn-outline-danger" type="submit">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-cart-plus"></i> Buy Stock
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+                        <form th:action="@{/transactions/buy}" method="post">
+                            <div class="mb-3">
+                                <label for="symbol" class="form-label text-white">
+                                    <i class="bi bi-tag"></i> Stock Symbol
+                                </label>
+                                <select class="form-select" id="symbol" name="symbol" required onchange="updateStockName()">
+                                    <option value="">Select a stock</option>
+                                    <option th:each="stock : ${availableStocks}"
+                                            th:value="${stock.symbol}"
+                                            th:text="${stock.symbol} + ' - ' + ${stock.name} + ' (' + ${stock.totalShares} + ' shares available)'"
+                                            th:data-name="${stock.name}"
+                                            th:data-price="${stock.currentPrice}"
+                                            th:selected="${param.symbol != null and param.symbol[0] == stock.symbol}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="name" class="form-label text-white">
+                                    <i class="bi bi-building"></i> Stock Name
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" required readonly
+                                       th:value="${param.name != null ? param.name[0] : ''}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label text-white">
+                                    <i class="bi bi-123"></i> Quantity
+                                </label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" required
+                                       step="0.01" min="0.01" placeholder="Number of shares to buy">
+                            </div>
+                            <div class="mb-3">
+                                <label for="price" class="form-label text-white">
+                                    <i class="bi bi-currency-dollar"></i> Price (per share)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="price" name="price" required
+                                           step="0.01" min="0.01" placeholder="Current market price">
+                                </div>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="bi bi-wallet2"></i> 
+                                <strong class="text-white">Available Cash:</strong> $<span th:text="${#numbers.formatDecimal(portfolio.availableCash, 1, 2)}">10000.00</span>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Execute Buy Order
+                                </button>
+                                <a th:href="@{/transactions}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function updateStockName() {
+            const symbolSelect = document.getElementById('symbol');
+            const nameInput = document.getElementById('name');
+            const priceInput = document.getElementById('price');
+            const selectedOption = symbolSelect.options[symbolSelect.selectedIndex];
+            
+            if (selectedOption.value) {
+                nameInput.value = selectedOption.getAttribute('data-name');
+                priceInput.value = selectedOption.getAttribute('data-price');
+            } else {
+                nameInput.value = '';
+                priceInput.value = '';
+            }
+        }
+
+        // Call updateStockName on page load to handle pre-selected values
+        window.addEventListener('load', updateStockName);
+    </script>
+</body>
+</html>
